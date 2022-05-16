@@ -18,6 +18,6 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        "shutil", "pyutils"
+        "pytest-shutil", "pyutils"
     ]
 )
