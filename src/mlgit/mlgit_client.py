@@ -2,6 +2,7 @@ import datetime
 import json
 import shutil
 import os
+from numpy import str0
 import pandas as pd
 
 from pyutils.pickable import PickableObject
@@ -10,11 +11,13 @@ from pyutils.git import *
 class MLGitClient:
     """
     Repository Architecture
-        - model_name
-            - model_artifacts *
-            - model_versions *
-                - model
-                - model_version_artifacts *
+        - registry_dpath
+            - model_name
+                - model_artifacts *
+                - backtest
+                - model_versions *
+                    - model
+                    - model_version_artifacts *
     """
     def __init__(self, user_name: str, repo_name: str, registry_dpath: str = None):
         self.user_name = user_name
@@ -29,7 +32,7 @@ class MLGitClient:
             if path_component is not None
         ])
 
-    def get_model_versions(self, model_name: str) -> list:
+    def get_version_list(self, model_name: str) -> list:
         return self.get_json_artifact("versions", model_name)
 
     def get_json_artifact(self, artifact_name: str, model_name: str,
@@ -56,7 +59,7 @@ class MLGitClient:
         
         index_name = model_backtest.columns[0]
         model_backtest[index_name] = pd.to_datetime(model_backtest[index_name])
-        model_backtest["version"] = pd.to_datetime(model_backtest["version"])
+        model_backtest["version_timestamp"] = pd.to_datetime(model_backtest["version_timestamp"])
         model_backtest = model_backtest.set_index(index_name)
 
         return model_backtest
@@ -176,13 +179,17 @@ class MLGitClient:
                 os.path.join(model_version_local_dpath, "model")
 
     def log_model_version_from_local(self, access_token: str, model_name: str,
-        model_version: any, model_version_local_dpath: str) -> None:
+        model_version: str, model_version_local_dpath: str) -> None:
         push_directory(
             access_token=access_token,
             repo_name=self.repo_name,
             from_local_dpath=model_version_local_dpath,
             to_remote_dpath=self.model_remote_path(model_name, model_version)
         )
+
+        model_versions = self.get_version_list(model_name)
+        model_versions.append(model_version)
+        self.log_json_artifact(access_token, model_versions, "versions", model_name)
 
 if __name__ == "__main__":
     pass
