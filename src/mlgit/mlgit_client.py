@@ -24,7 +24,7 @@ class MLGitClient:
     def model_remote_path(self, model_name: str, model_version: str = None,
         artifact_name: str = None) -> str:
         return '/'.join([
-            str(path_component) for path_component in
+            path_component for path_component in
             [self.registry_dpath, model_name, model_version, artifact_name]
             if path_component is not None
         ])
@@ -42,7 +42,7 @@ class MLGitClient:
         )
 
     def get_pandas_artifact(self, artifact_name: str, model_name: str,
-        model_version: any = None, **read_csv_kwargs) -> pd.DataFrame:
+        model_version: str = None, **read_csv_kwargs) -> pd.DataFrame:
         remote_artifact_fpath = self.model_remote_path(model_name, model_version,
                 f"{artifact_name}.csv")
         
@@ -84,7 +84,7 @@ class MLGitClient:
         )
 
     def log_artifact(self, access_token: str, artifact_fpath: str,
-        model_name: str, model_version: any = None) -> None:
+        model_name: str, model_version: str = None) -> None:
         push_files(
             access_token=access_token,
             repo_name=self.repo_name,
@@ -93,7 +93,7 @@ class MLGitClient:
         )
 
     def log_json_artifact(self, access_token: str, json_artifact: any,
-        artifact_name: str, model_name: str, model_version: any = None) -> None:
+        artifact_name: str, model_name: str, model_version: str = None) -> None:
         
         artifact_temp_fpath = os.path.join(os.getcwd(), f"{artifact_name}.json")
 
@@ -104,7 +104,7 @@ class MLGitClient:
         os.remove(artifact_temp_fpath)
 
     def log_pandas_artifact(self, access_token: str, pandas_artifact: pd.DataFrame,
-        artifact_name: str, model_name: str, model_version: any = None,
+        artifact_name: str, model_name: str, model_version: str = None,
         **to_csv_kwargs) -> any:
         
         artifact_temp_fpath = os.path.join(os.getcwd(), f"{artifact_name}.csv")
@@ -114,25 +114,24 @@ class MLGitClient:
         os.remove(artifact_temp_fpath)
 
     def log_model_backtest(self, access_token: str, model_backtest: pd.DataFrame,
-        model_name: str, model_version: datetime.datetime = None) -> None:
+        model_name: str, version_timestamp: datetime.datetime = None) -> None:
         """ 
         """
-        if model_version is None: # Set to most recent prediction
-            model_version = model_backtest.index.max()
+        if version_timestamp is None: # Set to most recent prediction
+            version_timestamp = model_backtest.index.max()
 
         # Ensure compatibility of datetime comparison operations
         if isinstance(model_backtest.index, pd.PeriodIndex):
             model_backtest.index = model_backtest.index.to_timestamp()
 
-        if isinstance(model_version, pd.Period):
-            model_version = model_version.to_timestamp()
+        if isinstance(version_timestamp, pd.Period):
+            version_timestamp = version_timestamp.to_timestamp()
 
-        # Ensure compatibility with downloaded dataframe
         if model_backtest.index.name is None:
             model_backtest.index.name = "date"
 
         model_backtest.columns = model_backtest.columns.astype(str)
-        model_backtest["version"] = model_version
+        model_backtest["version_timestamp"] = version_timestamp
         
         try:
             prior_model_backtest = self.get_model_backtest(model_name)
@@ -143,8 +142,8 @@ class MLGitClient:
         # Override values
         prior_model_backtest[
             (prior_model_backtest.index.isin(model_backtest.index)) &
-            (prior_model_backtest["version"] > model_version) &
-            (prior_model_backtest.index < prior_model_backtest["version"])
+            (prior_model_backtest["version_timestamp"] > version_timestamp) &
+            (prior_model_backtest.index < prior_model_backtest["version_timestamp"])
         ] = model_backtest
 
         new_model_backtest = pd.concat([
@@ -152,12 +151,11 @@ class MLGitClient:
             model_backtest[~model_backtest.index.isin(prior_model_backtest.index)]
         ], axis=0).sort_index()
         
-        self.log_pandas_artifact(access_token, new_model_backtest,
-                "backtest", model_name)
+        self.log_pandas_artifact(access_token, new_model_backtest, "backtest", model_name)
 
     # Version Logging operations
     def log_model_version(self, access_token: str, pickable_model: PickableObject,
-        model_name: str, model_version: any) -> None:
+        model_name: str, model_version: str) -> None:
 
         model_version_local_dpath, model_version_local_fpath = \
                 self.make_model_version_local_paths(model_version)
@@ -169,7 +167,7 @@ class MLGitClient:
         shutil.rmtree(model_version_local_dpath)
 
     def make_model_version_local_paths(self, model_version: str) -> tuple:
-        model_version_local_dpath = os.path.join(os.getcwd(), str(model_version))
+        model_version_local_dpath = os.path.join(os.getcwd(), model_version)
 
         if not os.path.exists(model_version_local_dpath):
             os.makedirs(model_version_local_dpath)
