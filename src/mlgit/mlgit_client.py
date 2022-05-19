@@ -162,9 +162,6 @@ class MLGitClient:
 
         model_version_local_dpath, model_version_local_fpath = \
                 self.make_model_version_local_paths(model_version)
-        
-        print(model_version_local_dpath)
-        print(model_version_local_fpath)
 
         pickable_model.save(model_version_local_fpath)
         self.log_model_version_from_local(access_token, model_name, model_version,
