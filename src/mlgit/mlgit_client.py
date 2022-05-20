@@ -2,6 +2,7 @@ import datetime
 import json
 import shutil
 import os
+from importlib_metadata import version
 
 import pandas as pd
 
@@ -143,14 +144,25 @@ class MLGitClient:
                     "backtest", model_name)
 
         # Override values
-        prior_model_backtest[
-            (prior_model_backtest.index.isin(model_backtest.index)) &
-            (prior_model_backtest["version_timestamp"] > version_timestamp) &
-            (prior_model_backtest.index < prior_model_backtest["version_timestamp"])
+        overlapping_backtest = prior_model_backtest[
+            prior_model_backtest.index.isin(model_backtest.index)
+        ]
+
+        # Index < version_timestamp: previous versions take precedence
+        overlapping_backtest[
+            (overlapping_backtest.index <= version_timestamp) &
+            (overlapping_backtest["version_timestamp"] > version_timestamp)
+        ] = model_backtest
+
+        # Index > version_timestamp: newer versions take precedence
+        overlapping_backtest[
+            (overlapping_backtest.index > version_timestamp) &
+            (overlapping_backtest["version_timestamp"] < version_timestamp)
         ] = model_backtest
 
         new_model_backtest = pd.concat([
-            prior_model_backtest,
+            prior_model_backtest[~prior_model_backtest.index.isin(model_backtest.index)],
+            overlapping_backtest,
             model_backtest[~model_backtest.index.isin(prior_model_backtest.index)]
         ], axis=0).sort_index()
         
