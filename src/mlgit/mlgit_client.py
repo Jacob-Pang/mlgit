@@ -184,7 +184,8 @@ class MLGitClient:
             access_token=access_token,
             repo_name=self.repo_name,
             from_local_dpath=model_version_local_dpath,
-            to_remote_dpath=self.model_remote_path(model_name, model_version)
+            to_remote_dpath=self.model_remote_path(model_name, model_version),
+            timeout=120
         )
 
         model_versions = self.get_version_list(model_name)
