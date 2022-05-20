@@ -2,7 +2,6 @@ import datetime
 import json
 import shutil
 import os
-from importlib_metadata import version
 
 import pandas as pd
 
