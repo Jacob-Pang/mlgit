@@ -1,4 +1,5 @@
 import datetime
+import io
 import json
 import shutil
 import os
@@ -50,8 +51,8 @@ class MLGitClient:
                 f"{artifact_name}.csv")
         
         return pd.read_csv(
-            web_remote_fpath(self.user_name, self.repo_name, remote_artifact_fpath),
-            **read_csv_kwargs
+            io.BytesIO(read_remote_file(self.user_name, self.repo_name,
+                    remote_artifact_fpath)), **read_csv_kwargs
         )
 
     def get_model_backtest(self, model_name: str) -> pd.DataFrame:
@@ -158,6 +159,8 @@ class MLGitClient:
             (overlapping_backtest.index > version_timestamp) &
             (overlapping_backtest["version_timestamp"] < version_timestamp)
         ] = model_backtest
+
+        print(overlapping_backtest)
 
         new_model_backtest = pd.concat([
             prior_model_backtest[~prior_model_backtest.index.isin(model_backtest.index)],
