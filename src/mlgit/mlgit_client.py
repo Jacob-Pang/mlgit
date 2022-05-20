@@ -148,6 +148,10 @@ class MLGitClient:
             prior_model_backtest.index.isin(model_backtest.index)
         ]
 
+        overlapping_backtest[
+            overlapping_backtest["version_timestamp"] == version_timestamp
+        ] = model_backtest
+
         # Index < version_timestamp: previous versions take precedence
         overlapping_backtest[
             (overlapping_backtest.index <= version_timestamp) &
