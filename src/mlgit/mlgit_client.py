@@ -1,5 +1,4 @@
 import datetime
-import io
 import json
 import shutil
 import os
@@ -50,10 +49,8 @@ class MLGitClient:
         remote_artifact_fpath = self.model_remote_path(model_name, model_version,
                 f"{artifact_name}.csv")
         
-        return pd.read_csv(
-            io.BytesIO(read_remote_file(self.user_name, self.repo_name,
-                    remote_artifact_fpath)), **read_csv_kwargs
-        )
+        return read_remote_csv(self.user_name, self.repo_name, remote_artifact_fpath,
+                **read_csv_kwargs)
 
     def get_model_backtest(self, model_name: str) -> pd.DataFrame:
         model_backtest = self.get_pandas_artifact("backtest", model_name)
